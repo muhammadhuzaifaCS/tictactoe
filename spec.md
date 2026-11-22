@@ -88,3 +88,31 @@ Covers the change to R3 in problem.md. Everything in Rounds 1-3 still applies ex
   player can now only draw or lose, so the score will show draws and losses.
 - Undo (R10-R12) is unchanged. Because the computer is deterministic, redoing a move after an
   undo gets the same reply.
+
+
+## Round 5
+
+Covers R13-R15 from problem.md. Everything in Rounds 1-4 still applies except where noted.
+
+- Difficulty prompt (R13): once per session, before the first game, the program asks
+  "Choose difficulty (easy/hard): ". Input is trimmed and case-insensitive; `easy` or `e` means
+  Easy, `hard` or `h` means Hard. Any other answer prints "Please answer easy or hard." and asks
+  again. The choice is never asked again and stays the same for every game in the session
+  (playing again does not re-prompt). Accepting the one-letter forms is a decision made without
+  asking, in line with `y`/`n`.
+- End of input at the difficulty prompt quits cleanly (same rule as the other prompts): no game
+  is played and the final score (all zeros) is printed.
+- Hard (R14): exactly the Round 4 computer: optimal minimax, deterministic, never loses.
+- Easy (R15): each time the computer takes a turn, it plays a uniformly random legal move with
+  probability 1/3 ("about one in three"); otherwise it plays the optimal move exactly as on Hard.
+  The random chance is rolled fresh on every computer turn. A random move may happen to equal
+  the optimal one. Because of this the player can win on Easy.
+- Changes earlier behavior:
+  - R3 now describes the computer on Hard only (its wording is unchanged). On Easy, R15 applies.
+  - Round 4's note "the same board always gets the same reply" is true on Hard only. On Easy it
+    can differ, so after an undo (R11) the computer's reply to a redone move may be different.
+  - Round 4's "the player can now only draw or lose" holds on Hard only; on Easy a win is possible.
+- Implementation note: `computer_move(board)` is unchanged (always optimal). New
+  `choose_computer_move(board, difficulty, rng)` picks the move for a difficulty; `rng` is a
+  `random.Random`-like object (`random()` and `choice()`), passed in so tests can control it.
+- Score (R7-R9), undo (R10-R12) and quitting work as before on both difficulties.
