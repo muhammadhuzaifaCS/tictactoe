@@ -116,3 +116,35 @@ Covers R13-R15 from problem.md. Everything in Rounds 1-4 still applies except wh
   `choose_computer_move(board, difficulty, rng)` picks the move for a difficulty; `rng` is a
   `random.Random`-like object (`random()` and `choice()`), passed in so tests can control it.
 - Score (R7-R9), undo (R10-R12) and quitting work as before on both difficulties.
+
+
+## Round 6
+
+Covers R16-R18 from problem.md. Everything in Rounds 1-5 still applies except where noted.
+
+- Score file (decided with the user): `score.json`, in the same folder as `tictactoe.py` (not the
+  current working directory, so the score is the same wherever the program is launched).
+  Format: a JSON object with exactly three keys, e.g. `{"wins": 2, "losses": 1, "draws": 0}`.
+- Saving (R16): after each game ends, the program writes the updated score to the file, before it
+  asks "Play again? (y/n)". The file is replaced as a whole each time.
+- Mid-game quit (decided with the user): when the player quits mid-game (`q` or end of input), the
+  loss recorded by Round 2 is saved too, so the file always matches the final score shown.
+- Loading (R17): at startup, before the difficulty prompt, if the file exists and holds a valid
+  score, the session score starts from it. R8 and R9 then show scores that include it.
+- Valid score (R18, decided with the user, strict): a JSON object whose keys are exactly `wins`,
+  `losses` and `draws`, each a whole number >= 0 (a JSON integer; booleans, floats, strings and
+  negatives are invalid; extra or missing keys are invalid).
+- Missing or invalid file (R18): the score starts at 0/0/0 with no error and the program runs
+  normally. Invalid means the file cannot be read, is not JSON, or is not a valid score as above.
+  The bad file is left alone until the first save replaces it.
+- Save failure (decided with the user): if the file cannot be written, print one line
+  `Warning: could not save your score to <path>.` and keep playing; the score stays in memory.
+  Saving is attempted again after the next game.
+- One combined record: the score is not kept per difficulty.
+- Changes earlier behavior: Round 2's "it is not saved between runs" no longer holds. R7's count now
+  carries across runs. If the player has played earlier runs, the first score line shown already
+  includes those games. The final score of Round 5 with end of input at the difficulty prompt is
+  no longer necessarily all zeros: it shows the loaded score.
+- Implementation note: `load_score(path)` returns a score dict (the all-zero score for a missing or
+  invalid file); `save_score(score, path)` returns True on success and False if it could not write.
+  Both take the path as an argument so tests use a temporary folder and never touch the real file.
