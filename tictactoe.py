@@ -373,16 +373,24 @@ def play_one_game(difficulty=HARD, rng=random):
             return result
 
 
+def save_score_or_warn(score, path=SCORE_FILE):
+    """Save the score (R16); if that fails, print a one-line warning and carry on."""
+    if not save_score(score, path):
+        print(f"Warning: could not save your score to {path}.")
+
+
 def main():
-    score = new_score()
+    score = load_score(SCORE_FILE)  # continue from the saved score, or start at zero (R17, R18)
     difficulty = prompt_difficulty()  # asked once; stays for the whole session (R13)
     while difficulty is not None:
         result = play_one_game(difficulty)
         if result == QUIT:
             print("\nYou quit mid-game; that counts as a loss.")
             score = record_result(score, "loss")
+            save_score_or_warn(score)
             break
         score = record_result(score, result)
+        save_score_or_warn(score)  # before the play-again prompt, so a closed window loses nothing
         print(format_score(score))
         if not prompt_play_again():
             break

@@ -17,6 +17,10 @@ square number (1-9) to move, `u` (or `undo`) to take back your last move and the
 computer's reply, or `q` to quit mid-game. After each game, the score
 is shown and you're asked to play again (`y`/`n`); the final score is shown when you quit.
 
+Your score is saved to `score.json` (next to `tictactoe.py`) after every game and loaded the next time you
+start, so your record carries over between runs. If the file is missing or damaged, the score starts at 0.
+Delete `score.json` to reset it.
+
 ## Test
 
 ```
