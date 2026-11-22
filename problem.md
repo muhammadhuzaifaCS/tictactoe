@@ -37,3 +37,14 @@ This round makes the game a real challenge: the player is now up against an oppo
 
 ### What this means for earlier requirements
 R4, R5, R7, R8 and R11 are unchanged and still apply. With an optimal opponent, the player's results will be draws or losses, and the score from R7 will show that.
+
+## Round 5 requirements
+
+This round gives casual players a fair shot: a player who just wants a relaxed game can pick an easier opponent that sometimes makes mistakes, instead of facing an opponent that can never be beaten.
+
+1. R13: At the start of the session, before the first game, the program asks the player to choose a difficulty, Easy or Hard, and asks again if the answer is not one of the two. The choice stays the same for every game in that session.
+2. R14: On Hard, the computer plays exactly as R3 describes (optimal play, never loses).
+3. R15: On Easy, each time the computer takes a turn there is a chance (about one in three) that it plays a random legal move instead of the optimal one; otherwise it plays optimally. This means the player can win on Easy.
+
+### Effect on earlier requirements
+R3 is not reworded, but its scope narrows: it now describes the computer's behavior on Hard difficulty. On Easy, R15 applies instead. R3 keeps its ID.
