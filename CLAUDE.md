@@ -18,3 +18,9 @@ computer move strategy) directly, not the interactive input loop.
   requirement it checks was explicitly changed or removed in problem.md.
 - Do not add features beyond the current round's requirements in problem.md without
   asking first.
+- Every test for a requirement names its ID (e.g. `test_R7_...`).
+- Record each significant decision that had real alternatives as a Y-statement in
+  docs/decisions/, numbered 0001, 0002, ... (continue the numbering; never reuse one).
+- Keep spec.md current: add a section per round, and note any earlier behavior a round changes.
+- Never undo or amend a commit; fix mistakes with a new commit.
+- Do not write the handoff file or commit it unless the user asks.

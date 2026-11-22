@@ -1,13 +1,18 @@
 # tictactoe
 
-Terminal tic-tac-toe against a computer opponent. See `problem.md` for the problem and
-requirements, and `spec.md` for the current round's exact behavior.
+Terminal tic-tac-toe against a computer opponent, with a running win/loss/draw score
+across games in a session. See `problem.md` for the problem and requirements, `spec.md`
+for the current round's exact behavior, and `docs/decisions/` for why specific choices
+were made.
 
 ## Run
 
 ```
 python tictactoe.py
 ```
+
+Type a square number (1-9) to move, or `q` to quit mid-game. After each game, the score
+is shown and you're asked to play again (`y`/`n`); the final score is shown when you quit.
 
 ## Test
 
