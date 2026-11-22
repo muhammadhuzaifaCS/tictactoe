@@ -226,8 +226,7 @@ class TestUndoCommand(unittest.TestCase):
         self.assertTrue(is_undo_command("u"))
 
     def test_R10_case_and_whitespace_ignored(self):
-        self.assertTrue(is_undo_command("  UNDO 
-"))
+        self.assertTrue(is_undo_command("  UNDO \n"))
         self.assertTrue(is_undo_command(" U "))
 
     def test_R10_other_input_is_not_undo(self):

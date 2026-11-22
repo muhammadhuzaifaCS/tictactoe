@@ -157,6 +157,28 @@ def is_quit_command(text):
     return text.strip().lower() == "q"
 
 
+# --- Round 3: undo (R10-R12) --------------------------------------------------
+
+UNDO = "undo"
+
+
+def is_undo_command(text):
+    """True for 'undo' or 'u' (trimmed, any case)."""
+    return text.strip().lower() in ("undo", "u")
+
+
+def undo_move(history):
+    """Undo the player's last move and the computer's reply to it.
+
+    `history` is a list of boards, one snapshot taken just before each player move.
+    Returns (board, new_history), where board is the snapshot to go back to, or None
+    if there is nothing to undo. Does not mutate `history`.
+    """
+    if not history:
+        return None
+    return list(history[-1]), history[:-1]
+
+
 # --- Input/print loop (not unit-tested; logic lives in the functions above) ---
 
 
@@ -170,15 +192,17 @@ def read_line(prompt):
 
 
 def prompt_human_move(board):
-    """Return a 1-9 position, or QUIT if the player quits (or input ends)."""
+    """Return a 1-9 position, UNDO, or QUIT if the player quits (or input ends)."""
     while True:
-        text = read_line("Your move (1-9, or q to quit): ")
+        text = read_line("Your move (1-9, u to undo, or q to quit): ")
         if text is None or is_quit_command(text):
             return QUIT
+        if is_undo_command(text):
+            return UNDO
         try:
             pos = parse_position(text.strip())
         except ValueError:
-            print("Please enter a number from 1 to 9, or q to quit.")
+            print("Please enter a number from 1 to 9, u to undo, or q to quit.")
             continue
         if not is_valid_move(board, pos):
             print("That square is already taken. Try again.")
@@ -210,12 +234,23 @@ def announce(board):
 def play_one_game():
     """Play one game. Return 'win', 'loss', 'draw', or QUIT (player quit mid-game)."""
     board = new_board()
+    history = []  # boards from just before each player move (for undo)
     print(display_board(board))
 
     while True:
         pos = prompt_human_move(board)
         if pos == QUIT:
             return QUIT
+        if pos == UNDO:
+            undone = undo_move(history)
+            if undone is None:
+                print("Nothing to undo.")
+            else:
+                board, history = undone
+                print("\nUndid your last move and the computer's reply.")
+                print(display_board(board))
+            continue
+        history = history + [board]
         board = make_move(board, pos, HUMAN)
         print()
         print(display_board(board))
