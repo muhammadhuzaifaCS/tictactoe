@@ -39,3 +39,11 @@ computer move strategy) directly, not the interactive input loop.
   requirement (in Round 5 one passed because the test overwrote a taken square); fix it first.
 - Randomness in game logic takes a `random.Random`-like `rng` argument (needs `random()` and
   `choice()`), so tests pass a fixed fake. Do not patch the global `random` module in tests.
+- Tests that read or write files use `tempfile` and pass the path in; they never touch the real
+  `score.json`. Functions that do file I/O take the path as an argument and return a result
+  (True/False, or a safe default) instead of raising.
+- A stub must be wrong in a way every new test can catch, including "does not change X" and
+  "does not create a file" tests: have it return a wrong value and produce the side effect those tests
+  forbid. A do-nothing stub lets such tests pass vacuously (Round 6: 4 of 28 did).
+- When trying the game by hand, run it from a scratch copy or delete `score.json` afterwards: the real
+  program now saves a score file next to `tictactoe.py`.
