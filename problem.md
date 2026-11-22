@@ -19,3 +19,11 @@ This round turns a single game into a session: the player keeps a running score 
 1. R7: The program keeps a running count of the player's wins, losses, and draws across all games in the current session.
 2. R8: After each game ends, the program shows the updated score before asking whether to play again.
 3. R9: The program keeps starting new games until the player chooses to quit, and shows the final score when they do.
+
+## Round 3 requirements
+
+This round lets the player take back a mistake, such as typing the wrong square number, instead of being stuck with it for the rest of the game.
+
+1. R10: When it is the player's turn, they can type a command (such as undo) instead of a square number to take back their most recent move.
+2. R11: Undoing also removes the computer's reply to that move, so the board returns to the state just before the player's last move and it is the player's turn again.
+3. R12: If there is nothing to undo (no moves made yet in the current game), the program says so and asks for a square again, and the score is never changed by an undo.
