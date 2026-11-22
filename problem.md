@@ -27,3 +27,13 @@ This round lets the player take back a mistake, such as typing the wrong square 
 1. R10: When it is the player's turn, they can type a command (such as undo) instead of a square number to take back their most recent move.
 2. R11: Undoing also removes the computer's reply to that move, so the board returns to the state just before the player's last move and it is the player's turn again.
 3. R12: If there is nothing to undo (no moves made yet in the current game), the program says so and asks for a square again, and the score is never changed by an undo.
+
+## Round 4 requirements
+
+This round makes the game a real challenge: the player is now up against an opponent that cannot be beaten, so the best outcome is a draw.
+
+### Changed requirement
+1. R3 is changed (it keeps its ID and number). Old wording: "The computer opponent takes its turn automatically, always choosing a legal move using a simple strategy." New wording: "The computer opponent takes its turn automatically, always choosing a legal move using optimal play (it never loses)." Only the strategy part changed; the computer still moves automatically and always picks a legal move.
+
+### What this means for earlier requirements
+R4, R5, R7, R8 and R11 are unchanged and still apply. With an optimal opponent, the player's results will be draws or losses, and the score from R7 will show that.
