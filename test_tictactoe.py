@@ -15,6 +15,8 @@ from tictactoe import (
     format_final_score,
     parse_yes_no,
     is_quit_command,
+    is_undo_command,
+    undo_move,
 )
 
 
@@ -214,6 +216,87 @@ class TestMidGameQuit(unittest.TestCase):
     def test_R9_quit_mid_game_recorded_as_loss_in_final_score(self):
         score = record_result({"wins": 1, "losses": 0, "draws": 0}, "loss")
         self.assertEqual(format_final_score(score), "Final score - Wins: 1  Losses: 1  Draws: 0")
+
+
+class TestUndoCommand(unittest.TestCase):
+    """R10: undo is typed instead of a square number."""
+
+    def test_R10_undo_and_u_are_undo_commands(self):
+        self.assertTrue(is_undo_command("undo"))
+        self.assertTrue(is_undo_command("u"))
+
+    def test_R10_case_and_whitespace_ignored(self):
+        self.assertTrue(is_undo_command("  UNDO 
+"))
+        self.assertTrue(is_undo_command(" U "))
+
+    def test_R10_other_input_is_not_undo(self):
+        for text in ["", "5", "q", "un", "undoo", "redo"]:
+            self.assertFalse(is_undo_command(text), text)
+
+
+class TestUndoMove(unittest.TestCase):
+    """R11 and R12: undo restores the board from before the player's last move."""
+
+    def play_turn(self, board, history, pos):
+        """Mimic one loop turn: snapshot, human move, computer reply."""
+        history = history + [board]
+        board = make_move(board, pos, "X")
+        board = make_move(board, computer_move(board), "O")
+        return board, history
+
+    def test_R11_undo_returns_board_from_before_last_player_move(self):
+        start = new_board()
+        board, history = self.play_turn(start, [], 1)
+        self.assertNotEqual(board, start)
+        restored, _ = undo_move(history)
+        self.assertEqual(restored, start)
+
+    def test_R11_undo_removes_computer_reply_too(self):
+        board, history = self.play_turn(new_board(), [], 1)
+        self.assertEqual(board.count("X"), 1)
+        self.assertEqual(board.count("O"), 1)
+        restored, _ = undo_move(history)
+        self.assertEqual(restored.count("X"), 0)
+        self.assertEqual(restored.count("O"), 0)
+
+    def test_R11_undo_only_removes_the_most_recent_pair(self):
+        board1, history = self.play_turn(new_board(), [], 1)
+        board2, history = self.play_turn(board1, history, 9)
+        restored, _ = undo_move(history)
+        self.assertEqual(restored, board1)
+
+    def test_R11_repeated_undo_steps_back_one_pair_each_time(self):
+        start = new_board()
+        board1, history = self.play_turn(start, [], 1)
+        board2, history = self.play_turn(board1, history, 9)
+        restored, history = undo_move(history)
+        self.assertEqual(restored, board1)
+        restored, history = undo_move(history)
+        self.assertEqual(restored, start)
+        self.assertIsNone(undo_move(history))
+
+    def test_R11_player_can_move_again_on_restored_square(self):
+        board, history = self.play_turn(new_board(), [], 1)
+        restored, _ = undo_move(history)
+        self.assertTrue(is_valid_move(restored, 1))
+
+    def test_R11_undo_does_not_mutate_inputs(self):
+        board, history = self.play_turn(new_board(), [], 1)
+        history_copy = [list(b) for b in history]
+        undo_move(history)
+        self.assertEqual(history, history_copy)
+
+    def test_R12_nothing_to_undo_with_empty_history(self):
+        self.assertIsNone(undo_move([]))
+
+    def test_R12_undo_does_not_change_score(self):
+        score = {"wins": 1, "losses": 2, "draws": 3}
+        before = dict(score)
+        _, history = self.play_turn(new_board(), [], 1)
+        undo_move(history)
+        undo_move([])
+        self.assertEqual(score, before)
 
 
 if __name__ == "__main__":
