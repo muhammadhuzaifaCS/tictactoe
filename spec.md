@@ -39,3 +39,28 @@ Covers R7-R9 from problem.md. Everything in Round 1 still applies except where n
   final score with the loss already included.
 - End of input (Ctrl-D / Ctrl-Z, `EOFError`) is treated as quitting at either prompt, so
   the program never crashes or loops forever when input runs out.
+
+
+## Round 3
+
+Covers R10-R12 from problem.md. Everything in Rounds 1 and 2 still applies except where noted.
+
+- Undo command (R10): at the move prompt, `undo` or `u` (trimmed, any case) takes back the
+  player's most recent move instead of placing a mark. Decided with the user.
+- Undo removes the pair (R11): the player's last move and the computer's reply to it are both
+  removed, so the board is exactly as it was just before the player's last move, and it is the
+  player's turn again. The restored board is printed.
+- Unlimited undo (decided with the user): each undo steps back one more player+computer pair,
+  until the board is empty.
+- Nothing to undo (R12): if no player move has been made in the current game (including after
+  undoing back to the start), print "Nothing to undo." and ask for a square again. The board
+  is not changed.
+- History is per game: a new game starts with no history, so undo never reaches into a
+  previous game.
+- Score is never changed by an undo (R12). A game only counts when it ends, and an undone
+  move cannot end a game, because an undo is only offered while the game is still running.
+- Changes earlier behavior: the move prompt now reads
+  "Your move (1-9, u to undo, or q to quit): " (was "Your move (1-9, or q to quit): ").
+  The invalid-input message now reads "Please enter a number from 1 to 9, u to undo, or q to quit."
+- Implementation note: history is a list of boards, one snapshot taken before each player
+  move; `undo_move(history)` returns `(board, history)` without the last snapshot, or `None`.
