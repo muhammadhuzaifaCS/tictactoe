@@ -48,3 +48,14 @@ This round gives casual players a fair shot: a player who just wants a relaxed g
 
 ### Effect on earlier requirements
 R3 is not reworded, but its scope narrows: it now describes the computer's behavior on Hard difficulty. On Easy, R15 applies instead. R3 keeps its ID.
+
+## Round 6 requirements
+
+This round makes the score last: a player who comes back to the game another day should see their record from before, not a blank scoreboard.
+
+1. R16: After each game ends, the program saves the current wins, losses, and draws to a file on disk.
+2. R17: When the program starts, if a saved score file exists, it loads the wins, losses, and draws from it and continues counting from there.
+3. R18: If the score file does not exist yet, or cannot be read as a valid score, the program starts the score at 0 wins, 0 losses, and 0 draws and still runs normally.
+
+### Effect on earlier requirements
+R7 is not reworded, but its scope widens: the running count now carries over between runs of the program, not only across the games within one run. R8 and R9 still apply, and the score they show includes the loaded score. The score is a single combined record and is not kept separately per difficulty.
