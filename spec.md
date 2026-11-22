@@ -64,3 +64,27 @@ Covers R10-R12 from problem.md. Everything in Rounds 1 and 2 still applies excep
   The invalid-input message now reads "Please enter a number from 1 to 9, u to undo, or q to quit."
 - Implementation note: history is a list of boards, one snapshot taken before each player
   move; `undo_move(history)` returns `(board, history)` without the last snapshot, or `None`.
+
+
+## Round 4
+
+Covers the change to R3 in problem.md. Everything in Rounds 1-3 still applies except where noted.
+
+- R3 (changed): the computer plays optimally and never loses. Against any sequence of human
+  moves the game ends in a computer win or a draw, never a human win. It still moves
+  automatically and always picks a legal move.
+- "Optimal" means minimax over the full game tree (the computer is `O`, the human is `X`).
+  A position's value is +1 if the computer can force a win, 0 if best play is a draw, -1 if
+  the computer would lose.
+- Choosing among moves of equal value (new, decided without asking):
+  - A win is preferred sooner over later, and a loss (when forced) later over sooner. So the
+    computer takes an immediate win when there is one, and otherwise blocks or delays.
+  - If several moves are still equal, the lowest-numbered square wins, so the computer is
+    deterministic: the same board always gets the same reply.
+- Changes earlier behavior: Round 1's priority list (win, block, center, corner, side) no
+  longer describes the computer. Winning and blocking an immediate threat still happen, but as
+  a result of minimax. The computer no longer always takes the center first.
+- Effects on earlier requirements (from problem.md): R4, R5, R7, R8, R11 are unchanged. The
+  player can now only draw or lose, so the score will show draws and losses.
+- Undo (R10-R12) is unchanged. Because the computer is deterministic, redoing a move after an
+  undo gets the same reply.
