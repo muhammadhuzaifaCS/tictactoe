@@ -231,24 +231,43 @@ def choose_computer_move(board, difficulty, rng):
 SCORE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "score.json")
 
 
+_SCORE_KEYS = ("wins", "losses", "draws")
+
+
+def _is_valid_score(data):
+    """True if `data` is a dict with exactly wins/losses/draws, each a whole number >= 0."""
+    if not isinstance(data, dict) or set(data) != set(_SCORE_KEYS):
+        return False
+    # bool is a subclass of int in Python, so True/False must be excluded explicitly.
+    return all(
+        isinstance(data[key], int) and not isinstance(data[key], bool) and data[key] >= 0
+        for key in _SCORE_KEYS
+    )
+
+
 def load_score(path):
-    """PLACEHOLDER (Round 6 stub): wrong on purpose (wrong score, junk side effect) so every new test fails by assertion."""
+    """Return the score saved at `path`, or the all-zero score if the file is missing or invalid.
+
+    Never raises and never changes the file. Invalid = unreadable, not JSON, or not exactly
+    wins/losses/draws as whole numbers >= 0.
+    """
     try:
-        with open(path, "w", encoding="utf-8") as f:
-            f.write("stub")
-    except OSError:
-        pass
-    return {"wins": -1, "losses": -1, "draws": -1}
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError, RecursionError):  # ValueError covers bad JSON and bad UTF-8
+        return new_score()
+    if not _is_valid_score(data):
+        return new_score()
+    return {key: data[key] for key in _SCORE_KEYS}
 
 
 def save_score(score, path):
-    """PLACEHOLDER (Round 6 stub): wrong on purpose (writes junk, mutates the score, claims success)."""
-    score["wins"] = -1
+    """Write `score` to `path` as JSON, replacing the file. Return True, or False if it could not be written."""
     try:
         with open(path, "w", encoding="utf-8") as f:
-            f.write("{}")
+            json.dump({key: score[key] for key in _SCORE_KEYS}, f)
     except OSError:
-        pass
+        return False
     return True
 
 
