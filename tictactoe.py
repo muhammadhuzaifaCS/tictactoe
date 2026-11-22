@@ -1,4 +1,5 @@
-"""Terminal tic-tac-toe vs. an unbeatable computer opponent. See spec.md for the rules."""
+"""Terminal tic-tac-toe vs. the computer (Easy or Hard). See spec.md for the rules."""
+import random
 import sys
 from functools import lru_cache
 
@@ -194,12 +195,32 @@ EASY_RANDOM_CHANCE = 1 / 3
 
 
 def parse_difficulty(text):
-    """Placeholder (Round 5 not implemented yet)."""
+    """EASY for 'easy'/'e', HARD for 'hard'/'h' (trimmed, any case); None for anything else."""
+    answer = text.strip().lower()
+    if answer in ("easy", "e"):
+        return EASY
+    if answer in ("hard", "h"):
+        return HARD
     return None
 
 
 def choose_computer_move(board, difficulty, rng):
-    """Placeholder (Round 5 not implemented yet)."""
+    """Return the 1-indexed position the computer plays on the given difficulty.
+
+    HARD: always `computer_move(board)` (optimal). EASY: with probability
+    EASY_RANDOM_CHANCE a random legal move, otherwise the optimal move.
+    `rng` needs `random()` and `choice()` (a `random.Random` works); it is passed in
+    so tests can control the dice.
+    """
+    if difficulty == HARD:
+        return computer_move(board)
+    if difficulty != EASY:
+        raise ValueError(f"Unknown difficulty: {difficulty!r}")
+    if rng.random() < EASY_RANDOM_CHANCE:
+        legal = [pos for pos in range(1, 10) if is_valid_move(board, pos)]
+        if not legal:
+            raise ValueError("No move available on a full board")
+        return rng.choice(legal)
     return computer_move(board)
 
 
@@ -234,6 +255,18 @@ def prompt_human_move(board):
         return pos
 
 
+def prompt_difficulty():
+    """Return EASY or HARD, or None if input ends. Asks again on any other answer."""
+    while True:
+        text = read_line("Choose difficulty (easy/hard): ")
+        if text is None:
+            return None
+        difficulty = parse_difficulty(text)
+        if difficulty is not None:
+            return difficulty
+        print("Please answer easy or hard.")
+
+
 def prompt_play_again():
     """Return True to play again, False to quit (also False if input ends)."""
     while True:
@@ -255,7 +288,7 @@ def announce(board):
     return result
 
 
-def play_one_game():
+def play_one_game(difficulty=HARD, rng=random):
     """Play one game. Return 'win', 'loss', 'draw', or QUIT (player quit mid-game)."""
     board = new_board()
     history = []  # boards from just before each player move (for undo)
@@ -283,7 +316,7 @@ def play_one_game():
         if result:
             return result
 
-        comp_pos = computer_move(board)
+        comp_pos = choose_computer_move(board, difficulty, rng)
         board = make_move(board, comp_pos, COMPUTER)
         print(f"\nComputer plays {comp_pos}.")
         print(display_board(board))
@@ -295,8 +328,9 @@ def play_one_game():
 
 def main():
     score = new_score()
-    while True:
-        result = play_one_game()
+    difficulty = prompt_difficulty()  # asked once; stays for the whole session (R13)
+    while difficulty is not None:
+        result = play_one_game(difficulty)
         if result == QUIT:
             print("\nYou quit mid-game; that counts as a loss.")
             score = record_result(score, "loss")
