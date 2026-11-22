@@ -1,5 +1,6 @@
-"""Terminal tic-tac-toe vs. a simple computer opponent. See spec.md for the rules."""
+"""Terminal tic-tac-toe vs. an unbeatable computer opponent. See spec.md for the rules."""
 import sys
+from functools import lru_cache
 
 HUMAN = "X"
 COMPUTER = "O"
@@ -9,10 +10,6 @@ WIN_LINES = [
     (0, 3, 6), (1, 4, 7), (2, 5, 8),  # columns
     (0, 4, 8), (2, 4, 6),             # diagonals
 ]
-
-CORNERS = [0, 2, 6, 8]
-SIDES = [1, 3, 5, 7]
-CENTER = 4
 
 
 def new_board():
@@ -57,37 +54,47 @@ def is_draw(board):
     return is_full(board) and check_winner(board) is None
 
 
-def _winning_move_for(board, mark):
-    """Return a 1-indexed position that gives `mark` an immediate win, or None."""
-    for pos in range(1, 10):
-        if is_valid_move(board, pos):
-            if check_winner(make_move(board, pos, mark)) == mark:
-                return pos
-    return None
+@lru_cache(maxsize=None)
+def _minimax(board, mark_to_move, depth):
+    """Value of `board` (a tuple, so results can be cached) for the computer with `mark_to_move` about to play.
+
+    Positive = computer wins, 0 = draw, negative = computer loses. Wins found sooner
+    score higher and losses found later score higher (the value is offset by `depth`).
+    """
+    winner = check_winner(board)
+    if winner == COMPUTER:
+        return 10 - depth
+    if winner == HUMAN:
+        return depth - 10
+    if is_full(board):
+        return 0
+
+    other = HUMAN if mark_to_move == COMPUTER else COMPUTER
+    values = [
+        _minimax(tuple(make_move(board, pos, mark_to_move)), other, depth + 1)
+        for pos in range(1, 10)
+        if is_valid_move(board, pos)
+    ]
+    return max(values) if mark_to_move == COMPUTER else min(values)
 
 
 def computer_move(board):
-    """Return the 1-indexed position the computer should play."""
-    win = _winning_move_for(board, COMPUTER)
-    if win is not None:
-        return win
+    """Return the 1-indexed position the computer (O) should play: optimal, never loses.
 
-    block = _winning_move_for(board, HUMAN)
-    if block is not None:
-        return block
+    Ties go to the lowest-numbered square, so the same board always gets the same reply.
+    """
+    best_pos = None
+    best_value = None
+    for pos in range(1, 10):
+        if not is_valid_move(board, pos):
+            continue
+        value = _minimax(tuple(make_move(board, pos, COMPUTER)), HUMAN, 1)
+        if best_value is None or value > best_value:
+            best_pos, best_value = pos, value
 
-    if board[CENTER] == " ":
-        return CENTER + 1
-
-    for i in CORNERS:
-        if board[i] == " ":
-            return i + 1
-
-    for i in SIDES:
-        if board[i] == " ":
-            return i + 1
-
-    raise ValueError("No move available on a full board")
+    if best_pos is None:
+        raise ValueError("No move available on a full board")
+    return best_pos
 
 
 def parse_position(text):
