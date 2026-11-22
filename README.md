@@ -1,6 +1,7 @@
 # tictactoe
 
-Terminal tic-tac-toe against a computer opponent, with a running win/loss/draw score
+Terminal tic-tac-toe against an unbeatable computer opponent (the best you can do is draw),
+with a running win/loss/draw score
 across games in a session. See `problem.md` for the problem and requirements, `spec.md`
 for the current round's exact behavior, and `docs/decisions/` for why specific choices
 were made.
@@ -22,4 +23,4 @@ python -m unittest
 ```
 
 (Tests cover board/game logic directly — win/draw detection, move validation, and the
-computer's move strategy — not the interactive input loop.)
+computer's optimal-play strategy — not the interactive input loop.)
