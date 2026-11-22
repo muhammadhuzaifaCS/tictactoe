@@ -27,4 +27,10 @@ computer move strategy) directly, not the interactive input loop.
 - Write code and test files with the Write/Edit tools, never shell heredocs or `python -`
   scripts with `\n` in strings: the shell expands `\n` into real line breaks and breaks
   string literals (happened in Rounds 2 and 3). Run `python -m unittest` right after writing.
+  The same goes for `sed -i` on code or tests: in Round 4 it added a duplicate import.
+- Before committing a "failing tests" step, check the tests fail by assertion (the behavior
+  is missing), not by an import error or syntax error.
+- When a round changes a requirement, tests for it that are still valid stay (rename them to
+  carry the ID); a test that only checked the old behavior may be replaced. Say which in the
+  end-of-round list of decisions.
 - If a requirement is ambiguous, ask the user and wait before writing code.
