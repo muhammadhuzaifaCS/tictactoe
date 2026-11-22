@@ -24,3 +24,7 @@ computer move strategy) directly, not the interactive input loop.
 - Keep spec.md current: add a section per round, and note any earlier behavior a round changes.
 - Never undo or amend a commit; fix mistakes with a new commit.
 - Do not write the handoff file or commit it unless the user asks.
+- Write code and test files with the Write/Edit tools, never shell heredocs or `python -`
+  scripts with `\n` in strings: the shell expands `\n` into real line breaks and breaks
+  string literals (happened in Rounds 2 and 3). Run `python -m unittest` right after writing.
+- If a requirement is ambiguous, ask the user and wait before writing code.
