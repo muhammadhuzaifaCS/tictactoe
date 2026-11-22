@@ -192,8 +192,7 @@ class TestPlayAgainPrompt(unittest.TestCase):
         self.assertIs(parse_yes_no("n"), False)
 
     def test_R9_case_and_whitespace_ignored(self):
-        self.assertIs(parse_yes_no("  Y 
-"), True)
+        self.assertIs(parse_yes_no("  Y \n"), True)
         self.assertIs(parse_yes_no("N"), False)
 
     def test_R9_other_answers_are_invalid_not_quit(self):
