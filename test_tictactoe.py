@@ -97,36 +97,117 @@ class TestDraw(unittest.TestCase):
         self.assertFalse(is_draw(new_board()))
 
 
+def play_all_human_lines(board, outcomes):
+    """Try every possible human move; the computer answers with computer_move.
+
+    Appends 'win' / 'loss' / 'draw' (human's point of view) to `outcomes` for every
+    finished game. Human is X and moves first, as in the real game.
+    """
+    for pos in range(1, 10):
+        if not is_valid_move(board, pos):
+            continue
+        after_human = make_move(board, pos, "X")
+        result = game_result(after_human)
+        if result is not None:
+            outcomes.append(result)
+            continue
+        reply = computer_move(after_human)
+        assert is_valid_move(after_human, reply), f"illegal reply {reply} on {after_human}"
+        after_computer = make_move(after_human, reply, "O")
+        result = game_result(after_computer)
+        if result is not None:
+            outcomes.append(result)
+            continue
+        play_all_human_lines(after_computer, outcomes)
+
+
 class TestComputerMove(unittest.TestCase):
-    def test_takes_immediate_win_over_everything_else(self):
+    def test_R3_takes_immediate_win_over_everything_else(self):
         # O has two in a row (positions 1,2 -> indices 0,1), winning move is 3.
         board = board_from("OO.......")
         self.assertEqual(computer_move(board), 3)
 
-    def test_blocks_human_immediate_win(self):
+    def test_R3_blocks_human_immediate_win(self):
         # X has two in a row (positions 1,2), O must block at 3.
         board = board_from("XX.......")
         self.assertEqual(computer_move(board), 3)
 
-    def test_prefers_win_over_block(self):
+    def test_R3_prefers_win_over_block(self):
         # O can win at position 3 (completing 1,2,3), while X separately
         # threatens to win at position 6 (completing 4,5,6). Win must come first.
         board = board_from("OO.XX....")
         self.assertEqual(computer_move(board), 3)
 
-    def test_takes_center_when_open_and_no_win_or_block(self):
-        board = new_board()
-        self.assertEqual(computer_move(board), 5)
-
-    def test_takes_a_corner_when_center_taken(self):
-        board = board_from("....X....")  # center taken by X, no win/block available
+    def test_R3_takes_a_corner_when_center_taken(self):
+        board = board_from("....X....")  # X in the center: a side reply loses, a corner draws
         move = computer_move(board)
         self.assertIn(move, [1, 3, 7, 9])
 
-    def test_always_returns_a_legal_move(self):
+    def test_R3_always_returns_a_legal_move(self):
         board = board_from("XO.XO....")
         move = computer_move(board)
         self.assertTrue(is_valid_move(board, move))
+
+    def test_R3_legal_move_on_empty_board(self):
+        board = new_board()
+        self.assertTrue(is_valid_move(board, computer_move(board)))
+
+    def test_R3_does_not_mutate_the_board(self):
+        board = board_from("X...O...X")
+        before = list(board)
+        computer_move(board)
+        self.assertEqual(board, before)
+
+    def test_R3_full_board_has_no_move(self):
+        board = board_from("XOXXOOOXX")
+        with self.assertRaises(ValueError):
+            computer_move(board)
+
+    def test_R3_answers_a_corner_opening_with_the_center(self):
+        # After X takes a corner, the center is the only reply that does not lose.
+        for corner in "X........", "..X......", "......X..", "........X":
+            with self.subTest(board=corner):
+                self.assertEqual(computer_move(board_from(corner)), 5)
+
+    def test_R3_defends_against_the_opposite_corners_trap(self):
+        # X has opposite corners 1 and 9, O has the center. A corner reply (3) lets X fork
+        # and win; the computer must take a side instead.
+        board = board_from("X...O...X")
+        self.assertIn(computer_move(board), [2, 4, 6, 8])
+
+    def test_R3_avoids_a_losing_move_when_a_fork_is_coming(self):
+        # X has 1 and 8, O has the center, O to move. Whatever square the computer
+        # picks, X must not be able to force a win from there.
+        board = board_from("X...O..X.")
+        outcomes = []
+        reply = computer_move(board)
+        after = make_move(board, reply, "O")
+        if game_result(after) is None:
+            play_all_human_lines(after, outcomes)
+        self.assertNotIn("win", outcomes)
+
+    def test_R3_computer_never_loses_against_any_human_play(self):
+        # Exhaustive: every human move at every turn, computer answers each time.
+        outcomes = []
+        play_all_human_lines(new_board(), outcomes)
+        self.assertGreater(len(outcomes), 0)
+        self.assertNotIn("win", outcomes)
+
+    def test_R3_human_can_still_draw_and_computer_can_still_win(self):
+        # The opponent is unbeatable, not unplayable: good play draws, mistakes lose.
+        outcomes = []
+        play_all_human_lines(new_board(), outcomes)
+        self.assertIn("draw", outcomes)
+        self.assertIn("loss", outcomes)
+
+    def test_R3_same_board_gets_the_same_reply(self):
+        board = board_from("X...O...X")
+        self.assertEqual(computer_move(board), computer_move(list(board)))
+
+    def test_R3_wins_as_soon_as_it_can_rather_than_later(self):
+        # O can win right now at 6, or set up a slower win elsewhere. It must take 6.
+        board = board_from("XX.OO.X..")
+        self.assertEqual(computer_move(board), 6)
 
 
 class TestScoreCounting(unittest.TestCase):
