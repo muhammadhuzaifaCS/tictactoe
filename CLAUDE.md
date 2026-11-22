@@ -34,3 +34,8 @@ computer move strategy) directly, not the interactive input loop.
   carry the ID); a test that only checked the old behavior may be replaced. Say which in the
   end-of-round list of decisions.
 - If a requirement is ambiguous, ask the user and wait before writing code.
+- When placeholder stubs are added so new tests fail by assertion, run the suite and check
+  that every new test fails. A new test that passes against a stub is not testing the
+  requirement (in Round 5 one passed because the test overwrote a taken square); fix it first.
+- Randomness in game logic takes a `random.Random`-like `rng` argument (needs `random()` and
+  `choice()`), so tests pass a fixed fake. Do not patch the global `random` module in tests.
