@@ -1,4 +1,6 @@
 """Terminal tic-tac-toe vs. the computer (Easy or Hard). See spec.md for the rules."""
+import json
+import os
 import random
 import sys
 from functools import lru_cache
@@ -222,6 +224,32 @@ def choose_computer_move(board, difficulty, rng):
             raise ValueError("No move available on a full board")
         return rng.choice(legal)
     return computer_move(board)
+
+
+# --- Round 6: saved score (R16-R18) -------------------------------------------
+
+SCORE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "score.json")
+
+
+def load_score(path):
+    """PLACEHOLDER (Round 6 stub): wrong on purpose (wrong score, junk side effect) so every new test fails by assertion."""
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("stub")
+    except OSError:
+        pass
+    return {"wins": -1, "losses": -1, "draws": -1}
+
+
+def save_score(score, path):
+    """PLACEHOLDER (Round 6 stub): wrong on purpose (writes junk, mutates the score, claims success)."""
+    score["wins"] = -1
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("{}")
+    except OSError:
+        pass
+    return True
 
 
 # --- Input/print loop (not unit-tested; logic lives in the functions above) ---

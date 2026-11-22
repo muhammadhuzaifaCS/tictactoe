@@ -1,3 +1,6 @@
+import json
+import os
+import tempfile
 import unittest
 
 from tictactoe import (
@@ -22,6 +25,8 @@ from tictactoe import (
     EASY_RANDOM_CHANCE,
     parse_difficulty,
     choose_computer_move,
+    load_score,
+    save_score,
 )
 
 
@@ -520,6 +525,171 @@ class TestEasyDifficulty(unittest.TestCase):
     def test_R15_unknown_difficulty_is_rejected(self):
         with self.assertRaises(ValueError):
             choose_computer_move(new_board(), "medium", FixedRng(0.0))
+
+
+class ScoreFileTestCase(unittest.TestCase):
+    """Gives each test a private temporary folder; the real score.json is never touched."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.path = os.path.join(self._tmp.name, "score.json")
+
+    def write_text(self, text):
+        with open(self.path, "w", encoding="utf-8") as f:
+            f.write(text)
+
+    def read_json(self):
+        with open(self.path, encoding="utf-8") as f:
+            return json.load(f)
+
+
+class TestSaveScore(ScoreFileTestCase):
+    def test_R16_save_writes_wins_losses_draws_to_the_file(self):
+        score = {"wins": 2, "losses": 1, "draws": 3}
+        self.assertTrue(save_score(score, self.path))
+        self.assertEqual(self.read_json(), {"wins": 2, "losses": 1, "draws": 3})
+
+    def test_R16_save_replaces_the_previous_contents(self):
+        save_score({"wins": 5, "losses": 5, "draws": 5}, self.path)
+        save_score({"wins": 0, "losses": 1, "draws": 0}, self.path)
+        self.assertEqual(self.read_json(), {"wins": 0, "losses": 1, "draws": 0})
+
+    def test_R16_save_overwrites_an_invalid_file(self):
+        self.write_text("garbage")
+        self.assertTrue(save_score({"wins": 1, "losses": 0, "draws": 0}, self.path))
+        self.assertEqual(self.read_json(), {"wins": 1, "losses": 0, "draws": 0})
+
+    def test_R16_save_does_not_change_the_score(self):
+        score = {"wins": 1, "losses": 2, "draws": 3}
+        save_score(score, self.path)
+        self.assertEqual(score, {"wins": 1, "losses": 2, "draws": 3})
+
+    def test_R16_each_finished_game_result_can_be_saved(self):
+        score = new_score()
+        for result in ("win", "loss", "draw", "loss"):
+            score = record_result(score, result)
+            save_score(score, self.path)
+            self.assertEqual(self.read_json(), score)
+        self.assertEqual(self.read_json(), {"wins": 1, "losses": 2, "draws": 1})
+
+    def test_R16_save_to_an_unwritable_path_returns_false_and_does_not_raise(self):
+        bad = os.path.join(self._tmp.name, "no-such-folder", "score.json")
+        self.assertFalse(save_score({"wins": 1, "losses": 0, "draws": 0}, bad))
+        self.assertFalse(os.path.exists(bad))
+
+
+class TestLoadScore(ScoreFileTestCase):
+    def test_R17_load_returns_the_saved_wins_losses_draws(self):
+        self.write_text('{"wins": 4, "losses": 2, "draws": 7}')
+        self.assertEqual(load_score(self.path), {"wins": 4, "losses": 2, "draws": 7})
+
+    def test_R17_load_accepts_zero_counts(self):
+        self.write_text('{"wins": 0, "losses": 0, "draws": 0}')
+        self.assertEqual(load_score(self.path), {"wins": 0, "losses": 0, "draws": 0})
+
+    def test_R17_key_order_and_whitespace_in_the_file_do_not_matter(self):
+        self.write_text('\n{ "draws": 3,\n  "wins": 1,\n  "losses": 2 }\n')
+        self.assertEqual(load_score(self.path), {"wins": 1, "losses": 2, "draws": 3})
+
+    def test_R17_save_then_load_round_trips(self):
+        score = {"wins": 9, "losses": 8, "draws": 7}
+        save_score(score, self.path)
+        self.assertEqual(load_score(self.path), score)
+
+    def test_R17_counting_continues_from_the_loaded_score(self):
+        save_score({"wins": 2, "losses": 5, "draws": 1}, self.path)
+        score = record_result(load_score(self.path), "draw")
+        self.assertEqual(score, {"wins": 2, "losses": 5, "draws": 2})
+        self.assertEqual(format_score(score), "Score - Wins: 2  Losses: 5  Draws: 2")
+
+    def test_R17_loaded_score_is_shown_in_the_final_score(self):
+        save_score({"wins": 3, "losses": 1, "draws": 0}, self.path)
+        self.assertEqual(
+            format_final_score(load_score(self.path)),
+            "Final score - Wins: 3  Losses: 1  Draws: 0",
+        )
+
+    def test_R17_two_runs_in_a_row_accumulate(self):
+        # First run: one win saved. Second run: loads it, adds a loss.
+        save_score(record_result(load_score(self.path), "win"), self.path)
+        save_score(record_result(load_score(self.path), "loss"), self.path)
+        self.assertEqual(self.read_json(), {"wins": 1, "losses": 1, "draws": 0})
+
+
+class TestLoadScoreMissingOrInvalid(ScoreFileTestCase):
+    def assert_starts_at_zero(self):
+        self.assertEqual(load_score(self.path), {"wins": 0, "losses": 0, "draws": 0})
+
+    def test_R18_missing_file_starts_at_zero(self):
+        self.assertFalse(os.path.exists(self.path))
+        self.assert_starts_at_zero()
+
+    def test_R18_missing_file_is_not_created_by_loading(self):
+        load_score(self.path)
+        self.assertFalse(os.path.exists(self.path))
+
+    def test_R18_empty_file_starts_at_zero(self):
+        self.write_text("")
+        self.assert_starts_at_zero()
+
+    def test_R18_malformed_json_starts_at_zero(self):
+        self.write_text('{"wins": 1, "losses": ')
+        self.assert_starts_at_zero()
+
+    def test_R18_not_json_at_all_starts_at_zero(self):
+        self.write_text("hello world")
+        self.assert_starts_at_zero()
+
+    def test_R18_json_that_is_not_an_object_starts_at_zero(self):
+        for text in ("[1, 2, 3]", "5", '"wins"', "null", "true"):
+            with self.subTest(text=text):
+                self.write_text(text)
+                self.assert_starts_at_zero()
+
+    def test_R18_missing_key_starts_at_zero(self):
+        self.write_text('{"wins": 1, "losses": 2}')
+        self.assert_starts_at_zero()
+
+    def test_R18_extra_key_starts_at_zero(self):
+        self.write_text('{"wins": 1, "losses": 2, "draws": 3, "extra": 4}')
+        self.assert_starts_at_zero()
+
+    def test_R18_negative_count_starts_at_zero(self):
+        self.write_text('{"wins": -1, "losses": 2, "draws": 3}')
+        self.assert_starts_at_zero()
+
+    def test_R18_non_integer_counts_start_at_zero(self):
+        for bad in ("1.5", "2.0", '"3"', "null", "true", "false", "[1]", "{}"):
+            with self.subTest(wins=bad):
+                self.write_text('{"wins": %s, "losses": 0, "draws": 0}' % bad)
+                self.assert_starts_at_zero()
+
+    def test_R18_one_bad_field_rejects_the_whole_file(self):
+        # wins and losses are fine; draws is bad. Nothing is partly loaded.
+        self.write_text('{"wins": 5, "losses": 5, "draws": "many"}')
+        self.assert_starts_at_zero()
+
+    def test_R18_unreadable_file_starts_at_zero(self):
+        # A folder where the file should be cannot be read as a file.
+        os.mkdir(self.path)
+        self.assert_starts_at_zero()
+
+    def test_R18_file_that_is_not_text_starts_at_zero(self):
+        with open(self.path, "wb") as f:
+            f.write(b"\xff\xfe\x00\x80\x81")
+        self.assert_starts_at_zero()
+
+    def test_R18_invalid_file_is_left_alone_by_loading(self):
+        self.write_text("garbage")
+        load_score(self.path)
+        with open(self.path, encoding="utf-8") as f:
+            self.assertEqual(f.read(), "garbage")
+
+    def test_R18_each_call_returns_a_fresh_score(self):
+        first = load_score(self.path)
+        first["wins"] = 99
+        self.assert_starts_at_zero()
 
 
 if __name__ == "__main__":
