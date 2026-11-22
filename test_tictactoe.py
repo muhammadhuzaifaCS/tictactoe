@@ -17,6 +17,11 @@ from tictactoe import (
     is_quit_command,
     is_undo_command,
     undo_move,
+    EASY,
+    HARD,
+    EASY_RANDOM_CHANCE,
+    parse_difficulty,
+    choose_computer_move,
 )
 
 
@@ -377,6 +382,144 @@ class TestUndoMove(unittest.TestCase):
         undo_move(history)
         undo_move([])
         self.assertEqual(score, before)
+
+
+class FixedRng:
+    """Stand-in for random.Random: random() returns `roll`; choice() returns the item at `pick`."""
+
+    def __init__(self, roll, pick=0):
+        self.roll = roll
+        self.pick = pick
+        self.rolls = 0
+        self.choices = []
+
+    def random(self):
+        self.rolls += 1
+        return self.roll
+
+    def choice(self, seq):
+        self.choices.append(list(seq))
+        return seq[self.pick]
+
+
+def legal_squares(board):
+    return [p for p in range(1, 10) if is_valid_move(board, p)]
+
+
+class TestParseDifficulty(unittest.TestCase):
+    def test_R13_easy_and_hard_words(self):
+        self.assertEqual(parse_difficulty("easy"), EASY)
+        self.assertEqual(parse_difficulty("hard"), HARD)
+
+    def test_R13_one_letter_forms(self):
+        self.assertEqual(parse_difficulty("e"), EASY)
+        self.assertEqual(parse_difficulty("h"), HARD)
+
+    def test_R13_case_and_whitespace_ignored(self):
+        self.assertEqual(parse_difficulty("  EaSy \n"), EASY)
+        self.assertEqual(parse_difficulty("\tHARD "), HARD)
+
+    def test_R13_anything_else_is_invalid(self):
+        for text in ["", "  ", "medium", "1", "2", "y", "easyy", "ha rd", "q"]:
+            self.assertIsNone(parse_difficulty(text), text)
+
+
+class TestHardDifficulty(unittest.TestCase):
+    def test_R14_hard_matches_optimal_play_on_every_board_reachable_early(self):
+        boards = [
+            "X........", "....X....", "X...O...X", "XX.......", "X.O.X....",
+            "XX.O.....", "X.......O",
+        ]
+        for s in boards:
+            board = board_from(s)
+            self.assertEqual(
+                choose_computer_move(board, HARD, FixedRng(0.0)), computer_move(board), s
+            )
+
+    def test_R14_hard_never_rolls_the_dice(self):
+        rng = FixedRng(0.0)
+        choose_computer_move(board_from("X........"), HARD, rng)
+        self.assertEqual(rng.rolls, 0)
+        self.assertEqual(rng.choices, [])
+
+    def test_R14_hard_still_takes_win_and_blocks(self):
+        rng = FixedRng(0.0)
+        self.assertEqual(choose_computer_move(board_from("OO.XX...."), HARD, rng), 3)
+        self.assertEqual(choose_computer_move(board_from("XX..O...."), HARD, rng), 3)
+
+
+class TestEasyDifficulty(unittest.TestCase):
+    def test_R15_low_roll_plays_a_random_legal_move_from_the_legal_squares(self):
+        board = board_from("XX..O....")  # optimal is 3 (block); legal are 3,4,6,7,8,9
+        rng = FixedRng(0.0, pick=4)
+        move = choose_computer_move(board, EASY, rng)
+        self.assertEqual(rng.choices, [[3, 4, 6, 7, 8, 9]])
+        self.assertEqual(move, 8)
+
+    def test_R15_high_roll_plays_the_optimal_move(self):
+        board = board_from("XX..O....")
+        rng = FixedRng(0.99)
+        self.assertEqual(choose_computer_move(board, EASY, rng), computer_move(board))
+        self.assertEqual(rng.choices, [])
+
+    def test_R15_the_chance_is_one_in_three(self):
+        self.assertAlmostEqual(EASY_RANDOM_CHANCE, 1 / 3)
+
+    def test_R15_roll_just_under_one_third_is_random_just_over_is_optimal(self):
+        board = board_from("XX..O....")
+        under = FixedRng(EASY_RANDOM_CHANCE - 0.001, pick=5)  # picks 9
+        over = FixedRng(EASY_RANDOM_CHANCE + 0.001, pick=5)
+        self.assertEqual(choose_computer_move(board, EASY, under), 9)
+        self.assertEqual(choose_computer_move(board, EASY, over), 3)
+
+    def test_R15_dice_are_rolled_on_every_turn(self):
+        rng = FixedRng(0.99)
+        for _ in range(4):
+            choose_computer_move(board_from("X........"), EASY, rng)
+        self.assertEqual(rng.rolls, 4)
+
+    def test_R15_easy_always_returns_a_legal_move(self):
+        import random
+
+        rng = random.Random(7)
+        for s in ["X........", "XX..O....", "XOXOX.O..", "XOXXOOOX."]:
+            board = board_from(s)
+            for _ in range(200):
+                self.assertIn(choose_computer_move(board, EASY, rng), legal_squares(board))
+
+    def test_R15_about_one_in_three_turns_deviate_from_optimal(self):
+        import random
+
+        board = board_from("XX..O....")  # 6 legal squares, only 3 is optimal
+        rng = random.Random(1)
+        trials = 6000
+        deviations = sum(
+            choose_computer_move(board, EASY, rng) != computer_move(board) for _ in range(trials)
+        )
+        expected = EASY_RANDOM_CHANCE * 5 / 6  # random move is the optimal one 1 time in 6
+        self.assertAlmostEqual(deviations / trials, expected, delta=0.03)
+
+    def test_R15_the_player_can_win_on_easy(self):
+        # The computer always rolls "random" and picks the lowest legal square (a bad move).
+        rng = FixedRng(0.0, pick=0)
+        board = new_board()
+        for human_pos in [5, 3, 7]:
+            self.assertTrue(is_valid_move(board, human_pos))
+            board = make_move(board, human_pos, "X")
+            if check_winner(board):
+                break
+            board = make_move(board, choose_computer_move(board, EASY, rng), "O")
+        self.assertEqual(check_winner(board), "X")
+
+    def test_R15_easy_does_not_mutate_the_board(self):
+        board = board_from("X...O....")
+        before = list(board)
+        choose_computer_move(board, EASY, FixedRng(0.0))
+        self.assertEqual(board, before)
+
+    def test_R15_unknown_difficulty_is_rejected(self):
+        with self.assertRaises(ValueError):
+            choose_computer_move(new_board(), "medium", FixedRng(0.0))
 
 
 if __name__ == "__main__":

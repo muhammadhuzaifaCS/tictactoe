@@ -186,6 +186,23 @@ def undo_move(history):
     return list(history[-1]), history[:-1]
 
 
+# --- Round 5: difficulty (R13-R15) --------------------------------------------
+
+EASY = "easy"
+HARD = "hard"
+EASY_RANDOM_CHANCE = 1 / 3
+
+
+def parse_difficulty(text):
+    """Placeholder (Round 5 not implemented yet)."""
+    return None
+
+
+def choose_computer_move(board, difficulty, rng):
+    """Placeholder (Round 5 not implemented yet)."""
+    return computer_move(board)
+
+
 # --- Input/print loop (not unit-tested; logic lives in the functions above) ---
 
 
