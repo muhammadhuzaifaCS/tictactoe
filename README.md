@@ -11,7 +11,8 @@ were made.
 python tictactoe.py
 ```
 
-Type a square number (1-9) to move, or `q` to quit mid-game. After each game, the score
+Type a square number (1-9) to move, `u` (or `undo`) to take back your last move and the
+computer's reply, or `q` to quit mid-game. After each game, the score
 is shown and you're asked to play again (`y`/`n`); the final score is shown when you quit.
 
 ## Test
